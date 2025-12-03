@@ -1,6 +1,7 @@
 {
   "name": "utes",
   "version": "0.1.0",
+  "description": "A web-based interactive learning assessment platform that generates multiple-choice and essay questions to evaluate comprehension of previously studied material",
   "private": true,
   "author": "Rifqi",
   "license": "MIT",

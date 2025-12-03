@@ -1,6 +1,8 @@
-# YouTube Learning Companion
+# UTES - Learning Assessment Platform
 
-Aplikasi web untuk mengetes dengan latihan soal interaktif.
+A web-based interactive learning assessment platform that generates multiple-choice and essay questions to evaluate comprehension of previously studied material.
+
+**UTES** (Universal Testing & Evaluation System) adalah aplikasi web yang dirancang untuk membantu pengguna menguji pemahaman materi pembelajaran melalui latihan soal interaktif berbasis pilihan ganda dan essay.
 
 ## Fitur
 
