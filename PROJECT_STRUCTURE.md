@@ -2,7 +2,7 @@
 
 ## Quick Overview
 
-YouTube Learning Companion adalah aplikasi web untuk mengUtes dengan latihan soal interaktif. Dibangun dengan Next.js 15 App Router, React 19, TypeScript, dan Tailwind CSS.
+Utes adalah aplikasi web untuk mengetes dengan latihan soal interaktif. Dibangun dengan Next.js 15 App Router, React 19, TypeScript, dan Tailwind CSS.
 
 ## Technology Stack
 

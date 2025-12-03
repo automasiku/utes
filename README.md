@@ -1,6 +1,6 @@
 # YouTube Learning Companion
 
-Aplikasi web untuk mengUtes dengan latihan soal interaktif.
+Aplikasi web untuk mengetes dengan latihan soal interaktif.
 
 ## Fitur
 
