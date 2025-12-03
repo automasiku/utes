@@ -40,7 +40,6 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 ## Dokumentasi
 
 - 🏗️ [Project Structure](PROJECT_STRUCTURE.md) - Struktur project dan best practices
-- 📝 [Migration Guide](MIGRATION.md) - Dokumentasi migrasi dari Vite ke Next.js
 
 ## Struktur Project
 
