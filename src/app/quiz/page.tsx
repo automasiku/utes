@@ -3,6 +3,7 @@
 import { Gamepad2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { AppLayout } from '@/components/AppLayout';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
 
@@ -43,13 +44,14 @@ export default function QuizPage() {
   };
 
   return (
+    <AppLayout>
     <div className="max-w-2xl mx-auto py-8 px-4 min-h-screen flex flex-col">
-      <div className="mb-8 space-y-2">
+      <div className="mb-6 lg:mb-8 space-y-2">
         <div className="flex justify-between items-center">
-           <div className="flex items-center gap-2 text-sm font-medium text-sky-600 bg-sky-50 px-3 py-1 rounded-full">
-             <Gamepad2 size={14} /> Level Nob
+           <div className="flex items-center gap-2 text-xs lg:text-sm font-medium text-sky-600 bg-sky-50 px-2 lg:px-3 py-1 rounded-full">
+             <Gamepad2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> Level Nob
            </div>
-           <span className="text-sm font-medium text-slate-500">Soal {currentQuestionIdx + 1}/{activeQuiz.length}</span>
+           <span className="text-xs lg:text-sm font-medium text-slate-500">Soal {currentQuestionIdx + 1}/{activeQuiz.length}</span>
         </div>
         <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
           <div 
@@ -60,13 +62,13 @@ export default function QuizPage() {
       </div>
 
       <Card className="flex-1 flex flex-col">
-        <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-8 leading-relaxed">
+        <h3 className="text-lg lg:text-2xl font-bold text-slate-800 mb-6 lg:mb-8 leading-relaxed">
           {question.question}
         </h3>
 
-        <div className="space-y-3 mb-8">
+        <div className="space-y-3 mb-6 lg:mb-8">
           {question.options.map((opt: string, idx: number) => {
-            let btnClass = "w-full p-4 text-left rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ";
+            let btnClass = "w-full p-3 lg:p-4 text-left rounded-xl border-2 transition-all duration-200 flex items-center justify-between group text-sm lg:text-base ";
             
             if (isAnswered) {
               if (idx === question.correct) {
@@ -92,8 +94,8 @@ export default function QuizPage() {
                 className={btnClass}
               >
                 <span className="font-medium">{opt}</span>
-                {isAnswered && idx === question.correct && <CheckCircle2 size={20} className="text-green-600" />}
-                {isAnswered && idx === selectedAnswer && idx !== question.correct && <AlertCircle size={20} className="text-red-500" />}
+                {isAnswered && idx === question.correct && <CheckCircle2 className="text-green-600 w-4 h-4 lg:w-5 lg:h-5" />}
+                {isAnswered && idx === selectedAnswer && idx !== question.correct && <AlertCircle className="text-red-500 w-4 h-4 lg:w-5 lg:h-5" />}
               </button>
             );
           })}
@@ -112,5 +114,6 @@ export default function QuizPage() {
         </div>
       </Card>
     </div>
+    </AppLayout>
   );
 }
