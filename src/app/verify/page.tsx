@@ -1,16 +1,53 @@
 'use client';
 
-import { Clock, PlayCircle, Target } from 'lucide-react';
+import { Clock, PlayCircle, Target, Loader2 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AppLayout } from '@/components/AppLayout';
-import { MOCK_VIDEO } from '@/data/mockData';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getYouTubeMetadata, getYouTubeTranscript } from '@/app/actions/youtube';
 
 export default function VerifyPage() {
-  const { setIsFullVideo } = useQuiz();
+  const { inputUrl, setIsFullVideo, youtubeMetadata, setYoutubeMetadata, setYoutubeTranscript } = useQuiz();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!inputUrl) {
+      router.push('/app');
+      return;
+    }
+
+    async function fetchYouTubeData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [metadata, transcript] = await Promise.all([
+          getYouTubeMetadata(inputUrl),
+          getYouTubeTranscript(inputUrl),
+        ]);
+
+        if (!metadata) {
+          setError('URL tidak valid atau video tidak ditemukan.');
+          return;
+        }
+
+        setYoutubeMetadata(metadata);
+        setYoutubeTranscript(transcript);
+      } catch (err) {
+        setError('Terjadi kesalahan saat mengambil data video.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchYouTubeData();
+  }, [inputUrl, router, setYoutubeMetadata, setYoutubeTranscript]);
 
   const handleFullVideo = () => {
     setIsFullVideo(true);
@@ -22,11 +59,43 @@ export default function VerifyPage() {
     router.push('/progress-check');
   };
 
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="max-w-xl mx-auto py-12 px-4 flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
+          <p className="text-slate-600">Mengambil data video...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="max-w-xl mx-auto py-12 px-4 space-y-6">
+          <button 
+            onClick={() => router.push('/app')} 
+            className="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm font-medium mb-4"
+          >
+            &larr; Kembali
+          </button>
+          <Card className="p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={() => router.push('/app')}>Coba Lagi</Button>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!youtubeMetadata) return null;
+
   return (
     <AppLayout>
     <div className="max-w-xl mx-auto py-12 px-4 space-y-6">
       <button 
-        onClick={() => router.push('/')} 
+        onClick={() => router.push('/app')} 
         className="text-slate-500 hover:text-slate-800 flex items-center gap-1 text-sm font-medium mb-4"
       >
         &larr; Kembali
@@ -36,17 +105,17 @@ export default function VerifyPage() {
       
       <Card className="overflow-hidden p-0">
         <div className="h-40 lg:h-48 w-full relative">
-          <img src={MOCK_VIDEO.thumbnail} className="w-full h-full object-cover" alt="Thumb" />
+          <img src={youtubeMetadata.thumbnail} className="w-full h-full object-cover" alt="Thumbnail" />
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
              <PlayCircle className="text-white opacity-80 w-10 h-10 lg:w-12 lg:h-12" />
           </div>
         </div>
         <div className="p-4 lg:p-6">
-          <h3 className="font-bold text-base lg:text-lg mb-1">{MOCK_VIDEO.title}</h3>
+          <h3 className="font-bold text-base lg:text-lg mb-1">{youtubeMetadata.title}</h3>
           <p className="text-slate-500 text-xs lg:text-sm flex items-center gap-2">
-             <span>{MOCK_VIDEO.channel}</span>
+             <span>{youtubeMetadata.channel}</span>
              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-             <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> {MOCK_VIDEO.duration}
+             <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> {youtubeMetadata.duration}
           </p>
         </div>
       </Card>

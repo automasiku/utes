@@ -44,8 +44,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (
     user &&
-    (request.nextUrl.pathname.startsWith('/login') ||
-      request.nextUrl.pathname.startsWith('/verify'))
+    request.nextUrl.pathname.startsWith('/login')
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/app';
@@ -56,7 +55,6 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/verify') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     request.nextUrl.pathname !== '/'
   ) {

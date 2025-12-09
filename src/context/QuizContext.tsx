@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MOCK_QUIZ_FULL, MOCK_QUIZ_PARTIAL, MOCK_ESSAY_DATA } from '@/data/mockData';
+import { YouTubeMetadata, YouTubeTranscript } from '@/app/actions/youtube';
 
 interface QuizContextType {
   inputUrl: string;
@@ -28,6 +29,10 @@ interface QuizContextType {
   setEssayFeedbackMode: (mode: boolean) => void;
   activeQuiz: typeof MOCK_QUIZ_FULL;
   activeEssay: typeof MOCK_ESSAY_DATA;
+  youtubeMetadata: YouTubeMetadata | null;
+  setYoutubeMetadata: (metadata: YouTubeMetadata | null) => void;
+  youtubeTranscript: YouTubeTranscript | null;
+  setYoutubeTranscript: (transcript: YouTubeTranscript | null) => void;
   resetQuiz: () => void;
 }
 
@@ -45,6 +50,8 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   const [isAnswered, setIsAnswered] = useState(false);
   const [essayAnswer, setEssayAnswer] = useState('');
   const [essayFeedbackMode, setEssayFeedbackMode] = useState(false);
+  const [youtubeMetadata, setYoutubeMetadata] = useState<YouTubeMetadata | null>(null);
+  const [youtubeTranscript, setYoutubeTranscript] = useState<YouTubeTranscript | null>(null);
 
   const activeQuiz = isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL;
   const activeEssay = MOCK_ESSAY_DATA;
@@ -61,6 +68,8 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setIsAnswered(false);
     setEssayAnswer('');
     setEssayFeedbackMode(false);
+    setYoutubeMetadata(null);
+    setYoutubeTranscript(null);
   };
 
   return (
@@ -90,6 +99,10 @@ export function QuizProvider({ children }: { children: ReactNode }) {
         setEssayFeedbackMode,
         activeQuiz,
         activeEssay,
+        youtubeMetadata,
+        setYoutubeMetadata,
+        youtubeTranscript,
+        setYoutubeTranscript,
         resetQuiz,
       }}
     >

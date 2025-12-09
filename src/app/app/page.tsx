@@ -1,18 +1,21 @@
 'use client';
 
-import { YoutubeIcon, CheckCircle2, BookOpen, ArrowRight } from 'lucide-react';
+import { CheckCircle2, BookOpen, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { AppLayout } from '@/components/AppLayout';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Home() {
   const { inputUrl, setInputUrl } = useQuiz();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputUrl.trim()) {
+      setIsLoading(true);
       router.push('/verify');
     }
   };
@@ -37,10 +40,11 @@ export default function Home() {
           className="w-full pl-10 lg:pl-12 pr-4 py-3 lg:py-4 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-base lg:text-lg transition-all shadow-sm"
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
+          disabled={isLoading}
         />
         <div className="mt-4 lg:mt-6 flex justify-center">
-          <Button type="submit" icon={ArrowRight}>
-            Mulai Belajar
+          <Button type="submit" icon={isLoading ? Loader2 : ArrowRight} disabled={isLoading}>
+            {isLoading ? 'Memproses...' : 'Mulai Belajar'}
           </Button>
         </div>
       </form>

@@ -29,9 +29,11 @@ export const Button = ({
     legend: "bg-gradient-to-r from-orange-500 to-red-600 text-white hover:shadow-orange-200"
   };
 
+  const isLoading = Icon?.name === 'Loader2';
+
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
-      {Icon && <Icon size={20} />}
+      {Icon && <Icon size={20} className={isLoading ? 'animate-spin' : ''} />}
       {children}
     </button>
   );
