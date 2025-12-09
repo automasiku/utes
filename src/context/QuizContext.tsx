@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MOCK_QUIZ_FULL, MOCK_QUIZ_PARTIAL, MOCK_ESSAY_DATA } from '@/data/mockData';
 import { YouTubeMetadata, YouTubeTranscript } from '@/app/actions/youtube';
 import { QuizQuestion } from '@/app/actions/openai';
+import { VideoCompletionStatus } from '@/app/actions/quiz';
 
 interface QuizContextType {
   inputUrl: string;
@@ -42,6 +43,8 @@ interface QuizContextType {
   setQuizSessionId: (id: string | null) => void;
   currentVideoInfo: { videoId: string; videoTitle: string; videoUrl: string } | null;
   setCurrentVideoInfo: (info: { videoId: string; videoTitle: string; videoUrl: string } | null) => void;
+  videoCompletionStatus: VideoCompletionStatus | null;
+  setVideoCompletionStatus: (status: VideoCompletionStatus | null) => void;
   resetQuiz: () => void;
 }
 
@@ -65,6 +68,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [currentVideoInfo, setCurrentVideoInfo] = useState<{ videoId: string; videoTitle: string; videoUrl: string } | null>(null);
+  const [videoCompletionStatus, setVideoCompletionStatus] = useState<VideoCompletionStatus | null>(null);
 
   const activeQuiz = generatedQuiz.length > 0 ? generatedQuiz : (isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL);
   const activeEssay = MOCK_ESSAY_DATA;
@@ -87,6 +91,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setUserAnswers([]);
     setQuizSessionId(null);
     setCurrentVideoInfo(null);
+    setVideoCompletionStatus(null);
   };
 
   return (
@@ -128,6 +133,8 @@ export function QuizProvider({ children }: { children: ReactNode }) {
         setQuizSessionId,
         currentVideoInfo,
         setCurrentVideoInfo,
+        videoCompletionStatus,
+        setVideoCompletionStatus,
         resetQuiz,
       }}
     >

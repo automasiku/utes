@@ -202,3 +202,41 @@ export async function saveQuizResult(params: SaveQuizResultParams) {
     throw error;
   }
 }
+
+export interface VideoCompletionStatus {
+  hasNobQuiz: boolean;
+  hasLegendQuiz: boolean;
+  nobScore?: number;
+  legendScore?: number;
+  nobAttempts: number;
+  legendAttempts: number;
+}
+
+export async function checkVideoCompletion(videoId: string): Promise<VideoCompletionStatus> {
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+
+    const { data: results, error } = await supabase
+      .from('quiz_results')
+      .select('quiz_mode, score')
+      .eq('user_id', user.id)
+      .eq('video_id', videoId);
+
+    if (error) throw error;
+
+    const nobResults = results?.filter(r => r.quiz_mode === 'nob') ?? [];
+    const legendResults = results?.filter(r => r.quiz_mode === 'legend') ?? [];
+
+    return {
+      hasNobQuiz: nobResults.length > 0,
+      hasLegendQuiz: legendResults.length > 0,
+      nobScore: nobResults.length > 0 ? Math.max(...nobResults.map(r => r.score)) : undefined,
+      legendScore: legendResults.length > 0 ? Math.max(...legendResults.map(r => r.score)) : undefined,
+      nobAttempts: nobResults.length,
+      legendAttempts: legendResults.length,
+    };
+  } catch (error) {
+    console.error('Error checking video completion:', error);
+    throw error;
+  }
+}

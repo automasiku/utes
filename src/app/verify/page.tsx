@@ -8,9 +8,10 @@ import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getYouTubeMetadata, getYouTubeTranscript } from '@/app/actions/youtube';
+import { checkVideoCompletion } from '@/app/actions/quiz';
 
 export default function VerifyPage() {
-  const { inputUrl, setIsFullVideo, youtubeMetadata, setYoutubeMetadata, setYoutubeTranscript, youtubeTranscript } = useQuiz();
+  const { inputUrl, setIsFullVideo, youtubeMetadata, setYoutubeMetadata, setYoutubeTranscript, youtubeTranscript, setVideoCompletionStatus } = useQuiz();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +44,17 @@ export default function VerifyPage() {
 
         setYoutubeMetadata(metadata);
         setYoutubeTranscript(transcript);
+
+        // Check if user has completed this video before
+        if (metadata?.videoId) {
+          try {
+            const completionStatus = await checkVideoCompletion(metadata.videoId);
+            setVideoCompletionStatus(completionStatus);
+          } catch (err) {
+            console.error('Failed to check video completion:', err);
+            // Non-critical error, continue without completion status
+          }
+        }
       } catch (err) {
         setError('Terjadi kesalahan saat mengambil data video.');
         console.error(err);
@@ -52,7 +64,7 @@ export default function VerifyPage() {
     }
 
     fetchYouTubeData();
-  }, [inputUrl, router, setYoutubeMetadata, setYoutubeTranscript]);
+  }, [inputUrl, router, setYoutubeMetadata, setYoutubeTranscript, setVideoCompletionStatus]);
 
   const handleFullVideo = () => {
     setIsFullVideo(true);
