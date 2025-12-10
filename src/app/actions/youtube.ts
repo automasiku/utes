@@ -20,12 +20,57 @@ export interface YouTubeTranscript {
   }>;
 }
 
-async function getVideoInfo(url: string) {
+// Singleton instance untuk reuse connection
+let youtubeInstance: Innertube | null = null;
+let instanceCreationTime = 0;
+const INSTANCE_LIFETIME = 5 * 60 * 1000; // 5 menit
+
+async function getYouTubeInstance() {
+  const now = Date.now();
+  
+  // Recreate instance jika sudah expired atau belum ada
+  if (!youtubeInstance || (now - instanceCreationTime) > INSTANCE_LIFETIME) {
+    youtubeInstance = await Innertube.create();
+    instanceCreationTime = now;
+  }
+  
+  return youtubeInstance;
+}
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getVideoInfo(url: string, retries = 3) {
   const videoId = extractVideoId(url);
   if (!videoId) throw new Error('Invalid YouTube URL');
   
-  const youtube = await Innertube.create();
-  return youtube.getInfo(videoId);
+  let lastError: Error | null = null;
+  
+  for (let i = 0; i < retries; i++) {
+    try {
+      const youtube = await getYouTubeInstance();
+      return await youtube.getInfo(videoId);
+    } catch (error: any) {
+      lastError = error;
+      
+      // Jika error 400 (precondition failed), recreate instance dan retry
+      if (error.message?.includes('400') || error.message?.includes('Precondition')) {
+        console.log(`Retry ${i + 1}/${retries}: Recreating YouTube instance...`);
+        youtubeInstance = null; // Force recreate
+        
+        // Exponential backoff: 1s, 2s, 4s
+        if (i < retries - 1) {
+          await sleep(Math.pow(2, i) * 1000);
+        }
+      } else {
+        // Error lain, langsung throw
+        throw error;
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to fetch video info');
 }
 
 export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata | null> {
