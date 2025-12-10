@@ -24,7 +24,7 @@ export interface SaveQuizSessionParams {
   videoChannel?: string;
   videoDuration?: string;
   quizMode: QuizMode;
-  questions: QuizQuestion[];
+  questions: QuizQuestion[] | any[];
   transcriptText?: string;
 }
 

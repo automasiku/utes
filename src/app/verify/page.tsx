@@ -81,7 +81,7 @@ export default function VerifyPage() {
       <AppLayout>
         <div className="max-w-xl mx-auto py-12 px-4 flex flex-col items-center justify-center min-h-[60vh]">
           <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
-          <p className="text-slate-600">Mengambil data video...</p>
+          <p className="text-slate-600">Menyiapkan materi...</p>
         </div>
       </AppLayout>
     );

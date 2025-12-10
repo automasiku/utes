@@ -32,7 +32,9 @@ youtube-learning-companion/
 │   │   ├── select-level/
 │   │   │   └── page.tsx       # Level selection
 │   │   ├── quiz/
-│   │   │   └── page.tsx       # Multiple choice quiz
+│   │   │   ├── page.tsx       # Multiple choice quiz
+│   │   │   └── configuration/
+│   │   │       └── page.tsx   # Quiz configuration
 │   │   ├── essay/
 │   │   │   └── page.tsx       # Essay questions
 │   │   └── result/

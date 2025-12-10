@@ -52,9 +52,34 @@ function addQuestionIds<T>(questions: T[]): (T & { id: number })[] {
   return questions.map((q, index) => ({ ...q, id: index + 1 }));
 }
 
+// Helper: Get difficulty instruction
+function getDifficultyInstruction(difficulty: 'easy' | 'medium' | 'hard'): string {
+  const instructions = {
+    easy: 'Buat soal yang mudah dan langsung, fokus pada fakta dasar dan konsep sederhana.',
+    medium: 'Buat soal dengan tingkat kesulitan sedang yang memerlukan pemahaman konsep.',
+    hard: 'Buat soal yang menantang dan kompleks, memerlukan analisis mendalam.',
+  };
+  return instructions[difficulty];
+}
+
+// Helper: Get learning objective instruction
+function getLearningObjectiveInstruction(objective: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'): string {
+  const instructions = {
+    remember: 'Fokus pada fakta dasar, definisi, istilah, dan poin penting dari video. Soal harus menguji kemampuan mengingat informasi.',
+    understand: 'Fokus pada penjelasan konsep, hubungan antar ide, dan interpretasi. Soal harus menguji pemahaman seperti "mengapa...", "apa hubungan antara...".',
+    apply: 'Fokus pada penerapan konsep ke situasi baru. Buat soal berbasis kasus yang mengharuskan siswa menggunakan konsep dalam konteks praktis.',
+    analyze: 'Fokus pada membandingkan, membedah, dan menemukan pola. Soal harus menguji kemampuan analisis seperti "apa penyebab utamanya?", "apa perbedaannya?".',
+    evaluate: 'Fokus pada penilaian dan pengambilan keputusan berdasarkan materi. Soal harus menguji kemampuan evaluasi seperti "manakah strategi yang paling tepat dan kenapa?".',
+    create: 'Fokus pada pembuatan sesuatu baru dari materi. Soal harus mendorong siswa untuk mensintesis informasi dan menghasilkan ide baru.',
+  };
+  return instructions[objective];
+}
+
 export async function generateQuizFromTranscript(
   transcript: string,
-  numberOfQuestions: number = QUIZ_DEFAULTS.NUMBER_OF_QUESTIONS
+  numberOfQuestions: number = QUIZ_DEFAULTS.NUMBER_OF_QUESTIONS,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium',
+  learningObjective: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create' = 'understand'
 ): Promise<QuizQuestion[]> {
   try {
     const userPrompt = `Kamu adalah seorang guru yang ahli dalam membuat soal latihan. Berdasarkan transkrip video berikut, buatlah ${numberOfQuestions} soal pilihan ganda untuk menguji pemahaman siswa.
@@ -65,7 +90,8 @@ ${transcript}
 Instruksi:
 - Buat ${numberOfQuestions} soal pilihan ganda
 - Setiap soal harus memiliki ${QUIZ_DEFAULTS.NUMBER_OF_OPTIONS} pilihan jawaban
-- Soal harus menguji pemahaman konsep, bukan hanya hafalan
+- Tingkat Kesulitan: ${getDifficultyInstruction(difficulty)}
+- Tujuan Pembelajaran: ${getLearningObjectiveInstruction(learningObjective)}
 - Soal harus relevan dengan materi di transkrip
 - Berikan jawaban yang benar untuk setiap soal
 
@@ -93,9 +119,17 @@ Berikan HANYA JSON array tanpa penjelasan tambahan.`;
 
 export async function generateEssayFromTranscript(
   transcript: string,
-  numberOfQuestions: number = QUIZ_DEFAULTS.ESSAY_QUESTIONS
+  numberOfQuestions: number = QUIZ_DEFAULTS.ESSAY_QUESTIONS,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium',
+  learningObjective: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create' = 'understand'
 ): Promise<EssayQuestion[]> {
   try {
+    const difficultyInstructions = {
+      easy: 'Buat soal essay yang mudah dengan jawaban yang relatif singkat dan langsung.',
+      medium: 'Buat soal essay dengan tingkat kesulitan sedang yang memerlukan penjelasan yang cukup detail.',
+      hard: 'Buat soal essay yang menantang dan kompleks, memerlukan jawaban yang mendalam dan komprehensif.',
+    };
+
     const userPrompt = `Kamu adalah seorang guru yang ahli dalam membuat soal essay. Berdasarkan transkrip video berikut, buatlah ${numberOfQuestions} soal essay untuk menguji pemahaman mendalam siswa.
 
 Transkrip:
@@ -103,6 +137,8 @@ ${transcript}
 
 Instruksi:
 - Buat ${numberOfQuestions} soal essay yang menguji pemahaman konsep secara mendalam
+- Tingkat Kesulitan: ${difficultyInstructions[difficulty]}
+- Tujuan Pembelajaran: ${getLearningObjectiveInstruction(learningObjective)}
 - Untuk setiap soal, sertakan:
   1. Pertanyaan essay yang memerlukan penjelasan detail
   2. Konteks referensi spesifik dari transkrip (kutipan atau ringkasan bagian yang relevan)

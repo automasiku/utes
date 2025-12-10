@@ -7,6 +7,10 @@ A web-based interactive learning assessment platform that generates multiple-cho
 ## Fitur
 
 - 🎯 Dua level tantangan: NOB (pilihan ganda) dan LEGEND (essay)
+- ⚙️ Konfigurasi quiz yang fleksibel:
+  - Jumlah soal (5, 10, 15, 20)
+  - Tingkat kesulitan (Mudah, Sedang, Sulit)
+  - Tujuan pembelajaran berdasarkan Taksonomi Bloom (Remember, Understand, Apply, Analyze, Evaluate, Create)
 - 📊 Tracking progress pembelajaran
 - 🤖 Analisis AI untuk feedback essay
 - 🎨 UI modern dengan Tailwind CSS

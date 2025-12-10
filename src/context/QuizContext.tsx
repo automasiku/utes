@@ -5,6 +5,7 @@ import { MOCK_QUIZ_FULL, MOCK_QUIZ_PARTIAL, MOCK_ESSAY_DATA } from '@/data/mockD
 import { YouTubeMetadata, YouTubeTranscript } from '@/app/actions/youtube';
 import { QuizQuestion, EssayQuestion } from '@/app/actions/openai';
 import { VideoCompletionStatus } from '@/app/actions/quiz';
+import { QuizConfiguration, QUIZ_DEFAULTS } from '@/lib/constants';
 
 interface QuizContextType {
   inputUrl: string;
@@ -53,6 +54,8 @@ interface QuizContextType {
   setCurrentVideoInfo: (info: { videoId: string; videoTitle: string; videoUrl: string } | null) => void;
   videoCompletionStatus: VideoCompletionStatus | null;
   setVideoCompletionStatus: (status: VideoCompletionStatus | null) => void;
+  quizConfig: QuizConfiguration;
+  setQuizConfig: (config: QuizConfiguration) => void;
   resetQuiz: () => void;
   resetEssayState: (length: number) => void;
   resetQuizState: (length: number) => void;
@@ -85,6 +88,11 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   const [essayAnswers, setEssayAnswers] = useState<string[]>([]);
   const [essayScores, setEssayScores] = useState<(number | null)[]>([]);
   const [essayFeedbacks, setEssayFeedbacks] = useState<string[]>([]);
+  const [quizConfig, setQuizConfig] = useState<QuizConfiguration>({
+    numberOfQuestions: QUIZ_DEFAULTS.NUMBER_OF_QUESTIONS,
+    difficulty: 'medium',
+    learningObjective: 'understand',
+  });
 
   const activeQuiz = generatedQuiz.length > 0 ? generatedQuiz : (isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL);
   const activeEssay = generatedEssay.length > 0 ? generatedEssay : (MOCK_ESSAY_DATA as any);
@@ -188,6 +196,8 @@ export function QuizProvider({ children }: { children: ReactNode }) {
         setEssayScores,
         essayFeedbacks,
         setEssayFeedbacks,
+        quizConfig,
+        setQuizConfig,
         resetQuiz,
         resetEssayState,
         resetQuizState,
