@@ -82,6 +82,24 @@ async function getVideoInfo(url: string, retries = 3) {
   throw lastError || new Error('Failed to fetch video info');
 }
 
+// Helper function untuk extract text dari berbagai format
+function extractText(value: any): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    // Coba berbagai property yang mungkin ada
+    if (value.text) return extractText(value.text);
+    if (value.runs && Array.isArray(value.runs)) {
+      return value.runs.map((run: any) => extractText(run)).join('');
+    }
+    if (value.simpleText) return value.simpleText;
+    // Jika object tapi tidak ada property yang dikenal, coba toString
+    const str = String(value);
+    return str === '[object Object]' ? '' : str;
+  }
+  return String(value);
+}
+
 export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata | null> {
   try {
     const info = await getVideoInfo(url);
@@ -92,25 +110,35 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
     // Ambil data dari basic_info
     const basicInfo = info.basic_info as any;
     
-    // Title bisa berupa string atau object dengan text property
-    let title = 'Unknown Title';
-    if (basicInfo.title) {
-      title = typeof basicInfo.title === 'string' 
-        ? basicInfo.title 
-        : String(basicInfo.title);
+    // Validate basic_info exists
+    if (!basicInfo) {
+      console.error('[YouTube] basic_info is null or undefined');
+      return null;
     }
     
-    // Author bisa berupa string atau object
-    let channel = 'Unknown Channel';
-    if (basicInfo.author) {
-      channel = typeof basicInfo.author === 'string'
-        ? basicInfo.author
-        : String(basicInfo.author);
-    } else if (basicInfo.channel?.name) {
-      channel = basicInfo.channel.name;
+    // Debug: log raw data types
+    console.log(`[YouTube] Raw data types - title: ${typeof basicInfo.title}, author: ${typeof basicInfo.author}, duration: ${typeof basicInfo.duration}`);
+    
+    // Title - extract dengan helper function
+    const title = extractText(basicInfo.title);
+    if (!title || title === 'Unknown Title') {
+      console.warn(`[YouTube] Failed to extract title, raw value:`, basicInfo.title);
     }
     
-    const durationSeconds = basicInfo.duration || 0;
+    // Author/Channel - coba berbagai sumber
+    let channel = extractText(basicInfo.author);
+    if (!channel && basicInfo.channel?.name) {
+      channel = extractText(basicInfo.channel.name);
+    }
+    if (!channel) {
+      console.warn(`[YouTube] Failed to extract channel, raw author:`, basicInfo.author, 'raw channel:', basicInfo.channel);
+      channel = 'Unknown Channel';
+    }
+    
+    const durationSeconds = Number(basicInfo.duration) || 0;
+    if (durationSeconds === 0) {
+      console.warn(`[YouTube] Duration is 0, raw value:`, basicInfo.duration);
+    }
     
     // Thumbnail - ambil yang terbesar
     let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
@@ -121,25 +149,31 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
     }
     
     // Description
-    let description = '';
-    if (basicInfo.short_description) {
-      description = typeof basicInfo.short_description === 'string'
-        ? basicInfo.short_description
-        : String(basicInfo.short_description);
-    }
+    const description = extractText(basicInfo.short_description);
 
-    console.log(`[YouTube] Metadata parsed - Title: ${title}, Channel: ${channel}, Duration: ${durationSeconds}s`);
+    const finalTitle = title || 'Unknown Title';
+    const finalChannel = channel || 'Unknown Channel';
+    
+    console.log(`[YouTube] Metadata parsed successfully - Title: "${finalTitle}", Channel: "${finalChannel}", Duration: ${durationSeconds}s`);
+
+    // Validate before returning
+    if (finalTitle === 'Unknown Title' && finalChannel === 'Unknown Channel' && durationSeconds === 0) {
+      console.error('[YouTube] All metadata fields are default values, something went wrong');
+      console.error('[YouTube] basic_info keys:', Object.keys(basicInfo));
+      return null;
+    }
 
     return {
       videoId,
-      title,
-      channel,
+      title: finalTitle,
+      channel: finalChannel,
       thumbnail,
       duration: formatDuration(durationSeconds),
       description,
     };
   } catch (error: any) {
     console.error('[YouTube] Error fetching YouTube metadata:', error.message);
+    console.error('[YouTube] Error stack:', error.stack);
     return null;
   }
 }
