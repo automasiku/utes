@@ -86,18 +86,60 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
   try {
     const info = await getVideoInfo(url);
     const videoId = extractVideoId(url)!;
-    const durationSeconds = info.basic_info.duration || 0;
+    
+    console.log(`[YouTube] Parsing metadata for ${videoId}`);
+    
+    // Ambil data dari basic_info
+    const basicInfo = info.basic_info as any;
+    
+    // Title bisa berupa string atau object dengan text property
+    let title = 'Unknown Title';
+    if (basicInfo.title) {
+      title = typeof basicInfo.title === 'string' 
+        ? basicInfo.title 
+        : String(basicInfo.title);
+    }
+    
+    // Author bisa berupa string atau object
+    let channel = 'Unknown Channel';
+    if (basicInfo.author) {
+      channel = typeof basicInfo.author === 'string'
+        ? basicInfo.author
+        : String(basicInfo.author);
+    } else if (basicInfo.channel?.name) {
+      channel = basicInfo.channel.name;
+    }
+    
+    const durationSeconds = basicInfo.duration || 0;
+    
+    // Thumbnail - ambil yang terbesar
+    let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    if (basicInfo.thumbnail && Array.isArray(basicInfo.thumbnail) && basicInfo.thumbnail.length > 0) {
+      // Ambil thumbnail terakhir (biasanya yang terbesar)
+      const lastThumbnail = basicInfo.thumbnail[basicInfo.thumbnail.length - 1];
+      thumbnail = lastThumbnail.url || thumbnail;
+    }
+    
+    // Description
+    let description = '';
+    if (basicInfo.short_description) {
+      description = typeof basicInfo.short_description === 'string'
+        ? basicInfo.short_description
+        : String(basicInfo.short_description);
+    }
+
+    console.log(`[YouTube] Metadata parsed - Title: ${title}, Channel: ${channel}, Duration: ${durationSeconds}s`);
 
     return {
       videoId,
-      title: info.basic_info.title || 'Unknown Title',
-      channel: info.basic_info.author || 'Unknown Channel',
-      thumbnail: info.basic_info.thumbnail?.[0]?.url || '',
+      title,
+      channel,
+      thumbnail,
       duration: formatDuration(durationSeconds),
-      description: info.basic_info.short_description || '',
+      description,
     };
-  } catch (error) {
-    console.error('Error fetching YouTube metadata:', error);
+  } catch (error: any) {
+    console.error('[YouTube] Error fetching YouTube metadata:', error.message);
     return null;
   }
 }
