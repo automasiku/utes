@@ -20,7 +20,7 @@ export interface YouTubeTranscript {
   }>;
 }
 
-// Singleton instance untuk reuse connection
+// Singleton instance untuk reuse connection (avoid rate limiting)
 let youtubeInstance: Innertube | null = null;
 let instanceCreationTime = 0;
 const INSTANCE_LIFETIME = 5 * 60 * 1000; // 5 menit
@@ -30,13 +30,13 @@ async function getYouTubeInstance() {
   
   // Recreate instance jika sudah expired atau belum ada
   if (!youtubeInstance || (now - instanceCreationTime) > INSTANCE_LIFETIME) {
+    console.log('[YouTube] Creating new Innertube instance...');
     youtubeInstance = await Innertube.create({
-      // Gunakan cache untuk menghindari rate limiting
       cache: undefined,
-      // Generate visitor data untuk bypass bot detection
       generate_session_locally: true,
     });
     instanceCreationTime = now;
+    console.log('[YouTube] Innertube instance created successfully');
   }
   
   return youtubeInstance;
@@ -61,11 +61,24 @@ async function getVideoInfo(url: string, retries = 3) {
       return info;
     } catch (error: any) {
       lastError = error;
-      console.error(`[YouTube] Error on attempt ${i + 1}/${retries}:`, error.message);
       
-      // Jika error 400 (precondition failed), recreate instance dan retry
-      if (error.message?.includes('400') || error.message?.includes('Precondition')) {
-        console.log(`[YouTube] Retry ${i + 1}/${retries}: Recreating YouTube instance...`);
+      // Check jika ini parser error dari youtubei.js (CourseProgressView, dll)
+      const isParserError = error.message?.includes('Type mismatch') || 
+                           error.message?.includes('CourseProgressView') ||
+                           error.message?.includes('not found!');
+      
+      if (isParserError) {
+        console.warn(`[YouTube] Parser error (known issue with youtubei.js): ${error.message}`);
+        // Parser error biasanya tidak fatal - data basic_info masih bisa diambil
+        // Tapi kita perlu recreate instance untuk attempt berikutnya
+        youtubeInstance = null;
+      } else {
+        console.error(`[YouTube] Error on attempt ${i + 1}/${retries}:`, error.message);
+      }
+      
+      // Retry logic
+      if (error.message?.includes('400') || error.message?.includes('Precondition') || isParserError) {
+        console.log(`[YouTube] Retry ${i + 1}/${retries}: Recreating instance...`);
         youtubeInstance = null; // Force recreate
         
         // Exponential backoff: 1s, 2s, 4s
@@ -73,7 +86,7 @@ async function getVideoInfo(url: string, retries = 3) {
           await sleep(Math.pow(2, i) * 1000);
         }
       } else {
-        // Error lain, langsung throw
+        // Error lain yang tidak dikenal, langsung throw
         throw error;
       }
     }
@@ -116,29 +129,32 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
       return null;
     }
     
-    // Debug: log raw data types
-    console.log(`[YouTube] Raw data types - title: ${typeof basicInfo.title}, author: ${typeof basicInfo.author}, duration: ${typeof basicInfo.duration}`);
+    // Debug: log raw data dengan detail
+    console.log(`[YouTube] Raw title:`, JSON.stringify(basicInfo.title));
+    console.log(`[YouTube] Raw author:`, JSON.stringify(basicInfo.author));
+    console.log(`[YouTube] Raw duration:`, basicInfo.duration);
+    console.log(`[YouTube] Raw channel:`, JSON.stringify(basicInfo.channel));
     
     // Title - extract dengan helper function
     const title = extractText(basicInfo.title);
-    if (!title || title === 'Unknown Title') {
-      console.warn(`[YouTube] Failed to extract title, raw value:`, basicInfo.title);
-    }
+    console.log(`[YouTube] Extracted title: "${title}"`);
     
     // Author/Channel - coba berbagai sumber
     let channel = extractText(basicInfo.author);
+    console.log(`[YouTube] Extracted author: "${channel}"`);
+    
     if (!channel && basicInfo.channel?.name) {
       channel = extractText(basicInfo.channel.name);
+      console.log(`[YouTube] Extracted from channel.name: "${channel}"`);
     }
+    
     if (!channel) {
-      console.warn(`[YouTube] Failed to extract channel, raw author:`, basicInfo.author, 'raw channel:', basicInfo.channel);
+      console.warn(`[YouTube] No channel found, using default`);
       channel = 'Unknown Channel';
     }
     
     const durationSeconds = Number(basicInfo.duration) || 0;
-    if (durationSeconds === 0) {
-      console.warn(`[YouTube] Duration is 0, raw value:`, basicInfo.duration);
-    }
+    console.log(`[YouTube] Parsed duration: ${durationSeconds}s`)
     
     // Thumbnail - ambil yang terbesar
     let thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
