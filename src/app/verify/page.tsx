@@ -27,22 +27,25 @@ export default function VerifyPage() {
       setError(null);
 
       try {
-        const [metadata, transcript] = await Promise.all([
-          getYouTubeMetadata(inputUrl),
-          getYouTubeTranscript(inputUrl),
-        ]);
-
+        // Fetch metadata first
+        const metadata = await getYouTubeMetadata(inputUrl);
+        
         if (!metadata) {
           setError('URL tidak valid atau video tidak ditemukan.');
           return;
         }
 
+        setYoutubeMetadata(metadata);
+
+        // Then fetch transcript
+        const transcript = await getYouTubeTranscript(inputUrl);
+
         if (!transcript) {
-          setError('Transkrip tidak tersedia untuk video ini. Pastikan video memiliki subtitle/caption.');
+          setError('Transkrip tidak tersedia untuk video ini. Pastikan video memiliki subtitle/caption yang aktif. Coba video lain atau aktifkan caption di YouTube terlebih dahulu.');
+          // Set metadata tetap tersedia meskipun transcript gagal
           return;
         }
 
-        setYoutubeMetadata(metadata);
         setYoutubeTranscript(transcript);
 
         // Check if user has completed this video before
@@ -56,8 +59,8 @@ export default function VerifyPage() {
           }
         }
       } catch (err) {
-        setError('Terjadi kesalahan saat mengambil data video.');
-        console.error(err);
+        console.error('Error fetching YouTube data:', err);
+        setError('Terjadi kesalahan saat mengambil data video. Silakan coba lagi dalam beberapa saat.');
       } finally {
         setLoading(false);
       }

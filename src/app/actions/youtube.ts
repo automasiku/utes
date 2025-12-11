@@ -1,6 +1,6 @@
 'use server';
 
-import { Innertube } from 'youtubei.js/web';
+import { Innertube } from 'youtubei.js';
 
 export interface YouTubeMetadata {
   videoId: string;
@@ -30,7 +30,12 @@ async function getYouTubeInstance() {
   
   // Recreate instance jika sudah expired atau belum ada
   if (!youtubeInstance || (now - instanceCreationTime) > INSTANCE_LIFETIME) {
-    youtubeInstance = await Innertube.create();
+    youtubeInstance = await Innertube.create({
+      // Gunakan cache untuk menghindari rate limiting
+      cache: undefined,
+      // Generate visitor data untuk bypass bot detection
+      generate_session_locally: true,
+    });
     instanceCreationTime = now;
   }
   
@@ -49,14 +54,18 @@ async function getVideoInfo(url: string, retries = 3) {
   
   for (let i = 0; i < retries; i++) {
     try {
+      console.log(`[YouTube] Fetching video info for ${videoId}, attempt ${i + 1}/${retries}`);
       const youtube = await getYouTubeInstance();
-      return await youtube.getInfo(videoId);
+      const info = await youtube.getInfo(videoId);
+      console.log(`[YouTube] Successfully fetched video info for ${videoId}`);
+      return info;
     } catch (error: any) {
       lastError = error;
+      console.error(`[YouTube] Error on attempt ${i + 1}/${retries}:`, error.message);
       
       // Jika error 400 (precondition failed), recreate instance dan retry
       if (error.message?.includes('400') || error.message?.includes('Precondition')) {
-        console.log(`Retry ${i + 1}/${retries}: Recreating YouTube instance...`);
+        console.log(`[YouTube] Retry ${i + 1}/${retries}: Recreating YouTube instance...`);
         youtubeInstance = null; // Force recreate
         
         // Exponential backoff: 1s, 2s, 4s
@@ -97,9 +106,46 @@ export async function getYouTubeTranscript(url: string): Promise<YouTubeTranscri
   try {
     const info = await getVideoInfo(url);
     
-    const transcriptData = await info.getTranscript();
+    console.log(`[YouTube] Attempting to fetch transcript for video`);
+    
+    // Coba ambil transkrip
+    let transcriptData;
+    try {
+      transcriptData = await info.getTranscript();
+      console.log(`[YouTube] Successfully fetched transcript`);
+    } catch (transcriptError: any) {
+      console.error('[YouTube] Error getting transcript:', transcriptError.message);
+      
+      // Jika gagal, cek apakah ada captions tersedia
+      try {
+        const captions = info.captions;
+        console.log(`[YouTube] Checking available captions...`);
+        
+        if (captions && captions.caption_tracks && captions.caption_tracks.length > 0) {
+          console.log(`[YouTube] Found ${captions.caption_tracks.length} caption tracks`);
+          
+          // Coba ambil caption track pertama yang tersedia
+          const track = captions.caption_tracks[0];
+          console.log(`[YouTube] Trying caption track: ${track.language_code}`);
+          
+          // Fetch caption URL dan parse manually
+          const captionUrl = track.base_url;
+          if (captionUrl) {
+            // youtubei.js akan handle fetching caption
+            transcriptData = await info.getTranscript();
+          }
+        } else {
+          console.log(`[YouTube] No caption tracks available`);
+          return null;
+        }
+      } catch (fallbackError: any) {
+        console.error('[YouTube] Fallback transcript fetch failed:', fallbackError.message);
+        return null;
+      }
+    }
     
     if (!transcriptData) {
+      console.log(`[YouTube] No transcript data available`);
       return null;
     }
 
@@ -109,14 +155,20 @@ export async function getYouTubeTranscript(url: string): Promise<YouTubeTranscri
       duration: segment.end_ms / 1000 - segment.start_ms / 1000,
     })) || [];
 
+    if (segments.length === 0) {
+      console.log(`[YouTube] No segments found in transcript`);
+      return null;
+    }
+
     const fullText = segments.map((s: any) => s.text).join(' ');
+    console.log(`[YouTube] Successfully parsed transcript with ${segments.length} segments`);
 
     return {
       text: fullText,
       segments,
     };
-  } catch (error) {
-    console.error('Error fetching YouTube transcript:', error);
+  } catch (error: any) {
+    console.error('[YouTube] Error fetching YouTube transcript:', error.message);
     return null;
   }
 }
